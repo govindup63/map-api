@@ -6,9 +6,9 @@ const app = express();
 const PORT = 3000;
 
 app.use(cors({
-  origin: 'http://127.0.0.1:3000',
+  origin: '*', // Allow requests from any origin
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true
+  credentials: true // If you want to allow cookies, set this to true
 }));
 
 app.get('/time', async (req, res) => {
