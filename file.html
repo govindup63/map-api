@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World Map Clock with Alarm and Stopwatch</title>
+
+  <!-- Include Leaflet CSS for OpenStreetMap -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+
+  <!-- Custom CSS -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #2c2c2c;
+      /* Dark background */
+      color: #e5e5e5;
+      margin: 0;
+    }
+
+    .container {
+      text-align: center;
+      padding: 20px;
+      border-radius: 10px;
+      background-color: #3e3e3e;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .clock {
+      font-size: 48px;
+      color: #7FFF00;
+      /* Green shade for time */
+      margin-bottom: 20px;
+    }
+
+    .date {
+      font-size: 24px;
+      color: #7FFF00;
+      margin-bottom: 20px;
+    }
+
+    select,
+    input {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #666;
+      background-color: #555;
+      color: #e5e5e5;
+    }
+
+    button {
+      padding: 10px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      margin: 0 10px;
+      font-weight: bold;
+      border-bottom: 2px solid transparent;
+      color: #e5e5e5;
+    }
+
+    .tab.active {
+      border-bottom: 2px solid #7FFF00;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Map styling */
+    #map {
+      height: 400px;
+      width: 100%;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active" id="homepageTab" onclick="showTab('homepage')">Homepage Clock</div>
+      <div class="tab" id="worldClockTab" onclick="showTab('worldClock')">World Clock</div>
+      <div class="tab" id="alarmTab" onclick="showTab('alarm')">Alarm</div>
+      <div class="tab" id="stopwatchTab" onclick="showTab('stopwatch')">Stopwatch</div>
+    </div>
+
+    <!-- Homepage Clock Tab -->
+    <div class="tab-content active" id="homepageContent">
+      <h2>Indian Standard Time (IST)</h2>
+      <div class="clock" id="homepageClock"></div>
+      <div class="date" id="homepageDate"></div>
+    </div>
+
+    <!-- World Clock Tab -->
+    <div class="tab-content" id="worldClockContent">
+      <h2>Click on any location on the world map to get its time:</h2>
+      <div id="map"></div>
+      <div class="clock" id="worldClock">Select a location on the map</div>
+    </div>
+
+    <!-- Alarm Tab -->
+    <div class="tab-content" id="alarmContent">
+      <h2>Set Alarm</h2>
+      <input type="time" id="alarmTime" />
+      <button onclick="setAlarm()">Set Alarm</button>
+      <p id="alarmMessage"></p>
+    </div>
+
+    <!-- Stopwatch Tab -->
+    <div class="tab-content" id="stopwatchContent">
+      <h2>Stopwatch</h2>
+      <div class="clock" id="stopwatch">00:00:00000</div>
+      <button onclick="startStopwatch()">Start</button>
+      <button onclick="stopStopwatch()">Stop</button>
+      <button onclick="resetStopwatch()">Reset</button>
+    </div>
+  </div>
+
+  <script>
+    // Homepage Clock (IST)
+    function updateHomepageClock() {
+      const now = new Date();
+      const options = {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'};
+      const istTime = now.toLocaleTimeString('en-IN', {timeZone: 'Asia/Kolkata'});
+      const istDate = now.toLocaleDateString('en-IN', options);
+
+      document.getElementById('homepageClock').textContent = istTime;
+      document.getElementById('homepageDate').textContent = istDate;
+    }
+    setInterval(updateHomepageClock, 1000);
+
+    // Initialize Map for World Clock
+    var map = L.map('map').setView([20.5937, 78.9629], 2); // Focused on India by default
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      minZoom: 2, // Setting min zoom level for better user experience
+    }).addTo(map);
+
+    // Get time from WorldTimeAPI based on coordinates for World Clock
+    map.on('click', function (e) {
+      var lat = e.latlng.lat;
+      var lng = e.latlng.lng;
+
+      // Fetch the appropriate time based on lat, lng from the new API
+      fetch(`https://map-api-0ovh.onrender.com/time?lat=${lat}&lng=${lng}`)
+        .then(response => response.json())
+        .then(data => {
+          // Assuming the new API returns a "time" field in the response JSON
+          document.getElementById('worldClock').textContent = data.time;
+        })
+        .catch(error => {
+          document.getElementById('worldClock').textContent = 'Time not available';
+          console.log("Error fetching time:", error);
+        });
+
+      // Optionally zoom in to the clicked location
+      map.setView([lat, lng], 10); // Zoom to level 10 after clicking on the map
+    });
+
+
+    // Alarm Feature
+    let alarmTimeout = null;
+    function setAlarm() {
+      const alarmTime = document.getElementById('alarmTime').value;
+      document.getElementById('alarmMessage').textContent = `Alarm set for ${alarmTime}`;
+
+      const now = new Date();
+      const alarmDate = new Date(`${now.toDateString()} ${alarmTime}`);
+      const timeToAlarm = alarmDate - now;
+
+      if (timeToAlarm >= 0) {
+        alarmTimeout = setTimeout(() => {
+          alert("Time's up!");
+          document.getElementById('alarmMessage').textContent = "";
+        }, timeToAlarm);
+      }
+    }
+
+    // Stopwatch Feature with Milliseconds
+    let stopwatchInterval = null;
+    let stopwatchTime = 0; // Time in milliseconds
+
+    function startStopwatch() {
+      if (!stopwatchInterval) {
+        // Update every 10 milliseconds
+        stopwatchInterval = setInterval(() => {
+          stopwatchTime += 10; // Increase time by 10 milliseconds
+          document.getElementById('stopwatch').textContent = formatTime(stopwatchTime);
+        }, 10); // Run every 10 milliseconds
+      }
+    }
+
+    function stopStopwatch() {
+      clearInterval(stopwatchInterval);
+      stopwatchInterval = null;
+    }
+
+    function resetStopwatch() {
+      stopStopwatch();
+      stopwatchTime = 0;
+      document.getElementById('stopwatch').textContent = "00:00:00.000"; // Reset display to 0
+    }
+
+    // Format time to include hours, minutes, seconds, and milliseconds
+    function formatTime(timeInMs) {
+      const hrs = Math.floor(timeInMs / 3600000); // 1 hr = 3600000 ms
+      const mins = Math.floor((timeInMs % 3600000) / 60000); // 1 min = 60000 ms
+      const secs = Math.floor((timeInMs % 60000) / 1000); // 1 sec = 1000 ms
+      const ms = timeInMs % 1000; // Remaining milliseconds
+      return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`; // Format to include milliseconds
+    }
+
+
+    // Tab Switching
+    function showTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+
+      document.getElementById(`${tab}Content`).classList.add('active');
+      document.getElementById(`${tab}Tab`).classList.add('active');
+    }
+  </script>
+
+</body>
+
+</html>
