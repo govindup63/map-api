@@ -6,7 +6,7 @@ const app = express();
 const PORT = 3000;
 
 app.use(cors({
-  origin: 'http://127.0.0.1',
+  origin: 'http://127.0.0.1:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
